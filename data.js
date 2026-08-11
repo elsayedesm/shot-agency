@@ -325,7 +325,7 @@ export const initialData = {
     contactEmail: "info@shotagency.com",
     contactPhone: "+966 50 000 7468",
     officeAddressEn: "King Fahd Road, Business Tower 14, Riyadh, Saudi Arabia",
-    officeAddressAr: "طريق الملك فهد، برج الأعمال 14، الرياض، المملكة العربية السعودية",
+    officeAddressAr: "شارع الجيش، برج العاصمة، طنطا، الغربية، مصر",
     instagram: "https://instagram.com",
     tiktok: "https://tiktok.com",
     facebook: "https://facebook.com",
