@@ -324,7 +324,7 @@ export const initialData = {
     agencyName: "SHOT Marketing Agency",
     contactEmail: "info@shotagency.com",
     contactPhone: "+966 50 000 7468",
-    officeAddressEn: "King Fahd Road, Business Tower 14, Riyadh, Saudi Arabia",
+    officeAddressEn: "Al-Jaish Street, Al-Asima Tower, Tanta, Gharbia, Egypt",
     officeAddressAr: "شارع الجيش، برج العاصمة، طنطا، الغربية، مصر",
     instagram: "https://instagram.com",
     tiktok: "https://tiktok.com",
