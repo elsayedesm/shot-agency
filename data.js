@@ -16,6 +16,7 @@ export const initialData = {
       primaryCta: "استعرض أعمالنا",
       secondaryCta: "احجز استشارة مجانية"
     },
+    stats: []
   },
 
   about: {
