@@ -16,7 +16,12 @@ export const initialData = {
       primaryCta: "استعرض أعمالنا",
       secondaryCta: "احجز استشارة مجانية"
     },
-    stats: []
+    stats: [
+      { id: "s1", number: "+150", labelEn: "Campaigns Launched", labelAr: "حملة تسويقية ناجحة" },
+      { id: "s2", number: "+380%", labelEn: "Average ROI Boost", labelAr: "متوسط زيادة العائد" },
+      { id: "s3", number: "25M+", labelEn: "Total Ad Reach", labelAr: "وصول الإعلانات" },
+      { id: "s4", number: "18", labelEn: "Industry Awards", labelAr: "جائزة إبداعية" }
+    ]
   },
 
   about: {
