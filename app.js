@@ -3612,9 +3612,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabase.auth.getSession();
   isAdminAuthenticated = !!session;
 
-  // Create demo seeds in Supabase on first run so they are editable/deletable later
-  await ensureSeedData();
-
   const [works, testimonials, plans, messages, settings, heroContent, aboutContent, services] = await Promise.all([
     loadWorksFromSupabase(),
     loadTestimonialsFromSupabase(),
