@@ -906,6 +906,20 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
+// --- Initial Loading Screen (shown while Supabase data is fetching) ---
+function showInitialLoadingScreen() {
+  const appView = document.getElementById('app-view');
+  if (!appView) return;
+  const isAr = lang === 'ar';
+  appView.innerHTML = `
+    <div class="initial-loading-screen" style="min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
+      <div style="width:46px; height:46px; border-radius:50%; border:4px solid rgba(53,151,12,0.2); border-top-color:var(--accent-green); animation:shot-spin 0.8s linear infinite;"></div>
+      <p style="color:var(--text-muted); font-size:0.95rem;">${isAr ? 'جاري تحميل الموقع...' : 'Loading site...'}</p>
+    </div>
+    <style>@keyframes shot-spin { to { transform: rotate(360deg); } }</style>
+  `;
+}
+
 // --- Theme & Language Toggles ---
 function applyTheme(newTheme) {
   theme = newTheme;
@@ -3376,237 +3390,21 @@ Object.defineProperty(window, 'activeAdminTab', {
 });
 
 // --- Initialize App ---
-
-// Ensure demo seeds exist in Supabase on first-run (creates editable rows)
-async function tableIsEmpty(table) {
-  try {
-    const res = await supabase.from(table).select('*', { head: true, count: 'exact' });
-    if (res.error) {
-      console.error('Count check failed for', table, res.error);
-      return false;
-    }
-    return (res.count === 0);
-  } catch (e) {
-    console.error('tableIsEmpty error', e);
-    return false;
-  }
-}
-
-async function ensureSeedData() {
-  try {
-    const sessionActive = await isAdminSessionActive();
-    if (!sessionActive) {
-      console.log('Skipping seed injection because no authenticated admin session is active.');
-      return;
-    }
-
-    // Services
-    if (await tableIsEmpty('services')) {
-      const servicesSeed = (initialData.about.services || []).map(s => ({
-        icon: s.icon || '',
-        title_ar: s.titleAr || s.title || '',
-        title_en: s.titleEn || s.title || '',
-        desc_ar: s.descAr || s.desc || '',
-        desc_en: s.descEn || s.desc || '',
-        features_ar: Array.isArray(s.featuresAr) ? s.featuresAr : [],
-        features_en: Array.isArray(s.featuresEn) ? s.featuresEn : [],
-      }));
-      if (servicesSeed.length) await supabase.from('services').insert(servicesSeed);
-      console.log('Seeded services');
-    }
-
-    // Testimonials
-    if (await tableIsEmpty('testimonials')) {
-      const tests = [
-        { name_ar: 'عميل تجريبي', name_en: 'Demo Client', role_ar: 'مدير تسويق', role_en: 'Marketing Director', quote_ar: 'خدمة ممتازة وسريعة.', quote_en: 'Excellent, fast service.', rating: 5 },
-        { name_ar: 'عميل اختبار', name_en: 'Test Client', role_ar: 'مالك مشروع', role_en: 'Business Owner', quote_ar: 'نتائج مذهلة خلال أيام.', quote_en: 'Amazing results in days.', rating: 5 }
-      ];
-      await supabase.from('testimonials').insert(tests);
-      console.log('Seeded testimonials');
-    }
-
-    // Plans (updated professional demo seeds with distinct names & features)
-    if (await tableIsEmpty('plans')) {
-      const plansSeed = [
-        {
-          name_ar: 'باقة شرارة',
-          name_en: 'Ignite',
-          popular: false,
-          features_ar: [
-            'ورشة استهداف وسوقية مُركزة',
-            'إطلاق حملة تجريبية لمدة 2 أسبوع',
-            'إنتاج 2 فيديو قصير عالي التحويل',
-            'إعداد تتبع تحويلات أساسي (Pixel / GA4)',
-            'نشرة تقرير أداء مُبسطة كل أسبوعين'
-          ],
-          features_en: [
-            'Focused positioning & audience workshop',
-            '2-week pilot campaign launch',
-            '2 high-converting short-form videos',
-            'Basic conversion tracking setup (Pixel / GA4)',
-            'Bi-weekly concise performance brief'
-          ]
-        },
-        {
-          name_ar: 'باقة مسرع النمو',
-          name_en: 'Accelerate',
-          popular: true,
-          features_ar: [
-            'استراتيجية نمو متعددة القنوات متكاملة',
-            'إختبارات إبداعية A/B على الفيديو والصورة',
-            'إعداد حملات إعادة استهداف ديناميكية',
-            'تحسين معدلات التحويل (CRO) ونسخة إعلانية عالية الأداء',
-            'لوحة تحكم تقارير مخصصة ولقاءات أداء أسبوعية'
-          ],
-          features_en: [
-            'Integrated multi-channel growth strategy',
-            'Creative A/B testing (video & image)',
-            'Dynamic retargeting campaigns setup',
-            'Conversion rate optimization & high-performing copy',
-            'Custom reporting dashboard + weekly performance calls'
-          ]
-        },
-        {
-          name_ar: 'باقة السيطرة المؤسسية',
-          name_en: 'Dominate — Enterprise',
-          popular: false,
-          features_ar: [
-            'خطة توسع سوقي سنوية مع ميزانية مُدارة',
-            'تكامل بيانات مع CRM وتحليلات متقدمة',
-            'فريق إبداعي وتقني مخصص مع مدير حساب',
-            'إنتاج فيلم علامة تجارية قصير وخيارات 3D assets',
-            'SLA دعم فني وتقارير ROI مفصّلة وفِرق تحسين مستمرة'
-          ],
-          features_en: [
-            'Annual market expansion roadmap with managed budgets',
-            'CRM data integrations & advanced analytics',
-            'Dedicated creative & technical team + account manager',
-            'Brand film production & optional 3D assets',
-            'SLA support, granular ROI reporting and ongoing optimization squads'
-          ]
-        }
-      ];
-      await supabase.from('plans').insert(plansSeed);
-      console.log('Seeded plans (professional-updated)');
-    }
-
-    // Works (Portfolio Projects)
-    if (await tableIsEmpty('works')) {
-      const worksSeed = [
-        {
-          category: 'video',
-          title_ar: 'إعلان نيون في المدينة',
-          title_en: 'Neon Velocity Commercial',
-          client_ar: 'فيلوسيتي موتورز',
-          client_en: 'Velocity Motors',
-          image: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1200&q=80',
-          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-          summary_ar: 'حملة تجارية سينمائية أدت لزيادة الاستفسارات بنسبة كبيرة.',
-          summary_en: 'A cinematic commercial campaign that boosted inquiries significantly.',
-          metrics_ar: '+310% عملاء محتملين | 4.2M مشاهدة',
-          metrics_en: '+310% Leads | 4.2M Views',
-          details_ar: 'تصميم السيناريو، التصوير الاحترافي والإنتاج الكامل للحملة.',
-          details_en: 'Full storyboard, professional shooting and end-to-end campaign production.'
-        },
-        {
-          category: 'ads',
-          title_ar: 'حملة أورا للتجميل',
-          title_en: 'Aura Cosmetics E-Commerce Scaling',
-          client_ar: 'أورا بيوتي',
-          client_en: 'Aura Beauty Co.',
-          image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80',
-          video_url: '',
-          summary_ar: 'مضاعفة الإيرادات الشهرية باستخدام إعلانات تيك توك وفيسبوك.',
-          summary_en: 'Scaled monthly revenue using TikTok UGC and Meta retargeting.',
-          metrics_ar: '$290k إيراد شهري | 5.4x ROAS',
-          metrics_en: '$290k Monthly Revenue | 5.4x ROAS',
-          details_ar: 'أنشأنا أكثر من 45 فيديو UGC ورفعنا معدل التحويل.',
-          details_en: 'Produced 45+ UGC variations and optimized landing page conversions.'
-        },
-        {
-          category: 'branding',
-          title_ar: 'هوية ماركة لوجو فانتوم',
-          title_en: 'Phantom Brand Identity',
-          client_ar: 'فانتوم',
-          client_en: 'Phantom',
-          image: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&w=1200&q=80',
-          video_url: '',
-          summary_ar: 'بناء هوية بصرية قوية ساعدت على تمييز العلامة في السوق.',
-          summary_en: 'Built a strong visual identity that differentiated the brand in market.',
-          metrics_ar: 'هوية متماسكة | زيادة التعرف على العلامة',
-          metrics_en: 'Coherent identity | Increased brand recognition',
-          details_ar: 'دليل هوية، شعار، وأصول تصميم كاملة للإستخدام الرقمي والمطبوع.',
-          details_en: 'Identity guidelines, logo, and full brand assets for digital & print.'
-        }
-      ];
-      await supabase.from('works').insert(worksSeed);
-      console.log('Seeded works');
-    }
-
-    // Messages
-    if (await tableIsEmpty('messages')) {
-      const msg = {
-        name: 'Demo Lead',
-        email: 'lead@example.com',
-        phone: '+966500000000',
-        service: 'Demo Inquiry',
-        budget: '-',
-        message: 'Hello, I would like to know more about your services.',
-        read: false,
-      };
-      await supabase.from('messages').insert(msg);
-      console.log('Seeded messages');
-    }
-
-    // Single-row tables (ensure id=1 exists) - use upsert so we don't overwrite
-    const sCheck = await supabase.from('settings').select('id').eq('id', 1).maybeSingle();
-    if (!sCheck.data) {
-      await supabase.from('settings').upsert({
-        id: 1,
-        contact_email: 'hello@shot.agency',
-        contact_phone: '+966500000000',
-        whatsapp: '',
-        facebook: '',
-        instagram: '',
-        office_address_ar: 'الرياض، المملكة العربية السعودية',
-        office_address_en: 'Riyadh, Saudi Arabia'
-      }, { onConflict: 'id' });
-      console.log('Seeded settings without admin PIN');
-    }
-
-    const hCheck = await supabase.from('hero_content').select('id').eq('id', 1).maybeSingle();
-    if (!hCheck.data) {
-      await supabase.from('hero_content').upsert({
-        id: 1,
-        title_ar: initialData.hero.ar.title,
-        subtitle_ar: initialData.hero.ar.subtitle,
-        title_en: initialData.hero.en.title,
-        subtitle_en: initialData.hero.en.subtitle,
-      }, { onConflict: 'id' });
-      console.log('Seeded hero_content');
-    }
-
-    const aCheck = await supabase.from('about_content').select('id').eq('id', 1).maybeSingle();
-    if (!aCheck.data) {
-      await supabase.from('about_content').upsert({
-        id: 1,
-        tag_ar: initialData.about.ar.tag,
-        title_ar: initialData.about.ar.title,
-        description_ar: initialData.about.ar.description,
-        tag_en: initialData.about.en.tag,
-        title_en: initialData.about.en.title,
-        description_en: initialData.about.en.description,
-      }, { onConflict: 'id' });
-      console.log('Seeded about_content');
-    }
-
-  } catch (e) {
-    console.error('ensureSeedData error', e);
-  }
-}
-
+// NOTE: The old demo-seed injection code (ensureSeedData/tableIsEmpty) has been
+// removed entirely. It was already dead code (unused), and this also eliminates
+// any risk of accidental duplicate rows in production.
+//
+// The perceived "dummy data flash" the user saw on load was NOT caused by seeds —
+// it was caused by calling applyTheme(theme) (which triggers a full renderApp())
+// before the real Supabase data had arrived, so the page briefly rendered using
+// the local `initialData` defaults from data.js. Fixed below by setting the theme
+// attribute directly (no render) and showing a lightweight loading screen until
+// the real data finishes loading.
 document.addEventListener('DOMContentLoaded', async () => {
-  applyTheme(theme);
+  // Set the theme attribute without triggering a full render of dummy data.
+  document.documentElement.setAttribute('data-theme', theme);
+  renderNavbar();
+  showInitialLoadingScreen();
   initBackgroundCanvas();
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -3653,7 +3451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await initMediaCache();
-  applyLanguage(lang);
+  applyLanguage(lang); // First real render, now backed by actual Supabase data.
 });
 
 // Security note for production launch:
@@ -3672,4 +3470,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 // - about_content: id=1, tag_ar, title_ar, description_ar, tag_en, title_en, description_en
 // - services: id, icon, title_ar, title_en, desc_ar, desc_en, features_ar (text[]), features_en (text[])
 // If any of these column names differ, update the load/save mappings accordingly.
-
