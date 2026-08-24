@@ -3400,25 +3400,50 @@ Object.defineProperty(window, 'activeAdminTab', {
 // the local `initialData` defaults from data.js. Fixed below by setting the theme
 // attribute directly (no render) and showing a lightweight loading screen until
 // the real data finishes loading.
-document.addEventListener('DOMContentLoaded', async () => {
-  // Set the theme attribute without triggering a full render of dummy data.
-  document.documentElement.setAttribute('data-theme', theme);
-  renderNavbar();
-  showInitialLoadingScreen();
-  initBackgroundCanvas();
+const APP_CACHE_KEY = 'shot_cached_appdata_v1';
 
-  const { data: { session } } = await supabase.auth.getSession();
-  isAdminAuthenticated = !!session;
+function loadCachedAppData() {
+  try {
+    const raw = localStorage.getItem(APP_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedAppData() {
+  try {
+    localStorage.setItem(APP_CACHE_KEY, JSON.stringify({
+      works: appData.works,
+      testimonials: appData.testimonials,
+      plans: appData.plans,
+      messages: appData.messages,
+      settings: appData.settings,
+      hero: appData.hero,
+      about: appData.about,
+    }));
+  } catch (e) {
+    console.warn('Cache save failed', e);
+  }
+}
+
+async function fetchFreshAppData(onProgress) {
+  let done = 0;
+  const total = 8;
+  const step = (promise) => promise.finally(() => {
+    done++;
+    if (onProgress) onProgress(Math.round((done / total) * 100));
+  });
 
   const [works, testimonials, plans, messages, settings, heroContent, aboutContent, services] = await Promise.all([
-    loadWorksFromSupabase(),
-    loadTestimonialsFromSupabase(),
-    loadPlansFromSupabase(),
-    loadMessagesFromSupabase(),
-    loadSettingsFromSupabase(),
-    loadHeroContentFromSupabase(),
-    loadAboutContentFromSupabase(),
-    loadServicesFromSupabase(),
+    step(loadWorksFromSupabase()),
+    step(loadTestimonialsFromSupabase()),
+    step(loadPlansFromSupabase()),
+    step(loadMessagesFromSupabase()),
+    step(loadSettingsFromSupabase()),
+    step(loadHeroContentFromSupabase()),
+    step(loadAboutContentFromSupabase()),
+    step(loadServicesFromSupabase()),
   ]);
 
   appData.works = works;
@@ -3428,19 +3453,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   appData.about.services = services;
 
   if (settings) {
-    appData.settings = {
-      ...appData.settings,
-      ...settings,
-    };
+    appData.settings = { ...appData.settings, ...settings };
   }
-
   if (heroContent) {
     appData.hero.ar.title = heroContent.titleAr;
     appData.hero.ar.subtitle = heroContent.subtitleAr;
     appData.hero.en.title = heroContent.titleEn;
     appData.hero.en.subtitle = heroContent.subtitleEn;
   }
-
   if (aboutContent) {
     appData.about.ar.tag = aboutContent.tagAr;
     appData.about.ar.title = aboutContent.titleAr;
@@ -3450,8 +3470,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     appData.about.en.description = aboutContent.descriptionEn;
   }
 
-  await initMediaCache();
-  applyLanguage(lang); // First real render, now backed by actual Supabase data.
+  saveCachedAppData();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  document.documentElement.setAttribute('data-theme', theme);
+  renderNavbar();
+  initBackgroundCanvas();
+
+  const { data: { session } } = await supabase.auth.getSession();
+  isAdminAuthenticated = !!session;
+
+  const cached = loadCachedAppData();
+
+  if (cached) {
+    // عندنا بيانات قديمة محفوظة محليًا: اعرضها فورًا من غير أي شاشة تحميل
+    appData.works = cached.works || [];
+    appData.testimonials = cached.testimonials || [];
+    appData.plans = cached.plans || [];
+    appData.messages = cached.messages || [];
+    appData.settings = { ...appData.settings, ...cached.settings };
+    appData.hero = cached.hero || appData.hero;
+    appData.about = { ...appData.about, ...cached.about };
+
+    await initMediaCache();
+    applyLanguage(lang); // رندر فوري بالبيانات المخزنة
+
+    // تحديث هادئ في الخلفية من غير إعادة عرض شاشة تحميل
+    fetchFreshAppData().then(() => {
+      renderApp();
+    }).catch(e => console.error('Background refresh failed', e));
+  } else {
+    // أول زيارة، مفيش cache: اعرض شاشة تحميل مع progress bar حقيقي
+    showInitialLoadingScreen();
+    await fetchFreshAppData(updateLoadingProgress);
+    await initMediaCache();
+    applyLanguage(lang);
+  }
 });
 
 // Security note for production launch:
