@@ -906,18 +906,24 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
-// --- Initial Loading Screen (shown while Supabase data is fetching) ---
+// --- Initial Loading Screen with Progress Bar ---
 function showInitialLoadingScreen() {
   const appView = document.getElementById('app-view');
   if (!appView) return;
   const isAr = lang === 'ar';
   appView.innerHTML = `
-    <div class="initial-loading-screen" style="min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
-      <div style="width:46px; height:46px; border-radius:50%; border:4px solid rgba(53,151,12,0.2); border-top-color:var(--accent-green); animation:shot-spin 0.8s linear infinite;"></div>
-      <p style="color:var(--text-muted); font-size:0.95rem;">${isAr ? 'جاري تحميل الموقع...' : 'Loading site...'}</p>
+    <div class="initial-loading-screen" style="min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px;">
+      <div style="width:100%; max-width:280px; height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+        <div id="loading-progress-bar" style="width:0%; height:100%; background:var(--accent-green); border-radius:10px; transition:width 0.25s ease;"></div>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.9rem;">${isAr ? 'جاري تحميل الموقع...' : 'Loading site...'}</p>
     </div>
-    <style>@keyframes shot-spin { to { transform: rotate(360deg); } }</style>
   `;
+}
+
+function updateLoadingProgress(percent) {
+  const bar = document.getElementById('loading-progress-bar');
+  if (bar) bar.style.width = `${Math.min(percent, 100)}%`;
 }
 
 // --- Theme & Language Toggles ---
